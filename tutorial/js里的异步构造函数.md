@@ -1,0 +1,1 @@
+JS里的异步构造函数:https://www.fly63.com/article/detial/10478
