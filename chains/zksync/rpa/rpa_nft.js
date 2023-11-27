@@ -3,8 +3,8 @@ import { generateRandomString } from "../../../utils/utils.js";
 
 export class RPANftUtil extends MetaMaskUtil {
 
-    constructor(browserId) {
-        super(browserId);
+    constructor(browserId, enPassword) {
+        super(browserId, enPassword);
     }
 
     async rpaZksNetworkMintDomain(projectInfo) {
@@ -110,7 +110,7 @@ export class RPANftUtil extends MetaMaskUtil {
                     await this.page.locator(`//div[text()="${randomChain}"]`).click()
                     await this.page.waitForTimeout(1000)
                 }
-                await this.executeTransaction('//button[text()="Claim"]', { gasLimitRate:0.7 })
+                await this.executeTransaction('//button[text()="Claim l2t Tokens"]', { gasLimitRate:0.7 })
                 await this.page.waitForTimeout(5000)
                 await this.executeTransaction('//button[text()="Bridge Tokens"]', { gasLimitRate:0.7 })
             }

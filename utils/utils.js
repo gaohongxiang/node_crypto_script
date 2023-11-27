@@ -298,26 +298,84 @@ function sleep(seconds) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-function randomWait(maxSeconds=10) {
-    const randomSeconds = Math.random() * maxSeconds;
-    console.log(`等待${randomSeconds}秒`)
+/**
+ * 等待随机时间的异步函数
+ * @param {number} [minSeconds=0] - 最小等待时间（单位：秒）
+ * @param {number} [maxSeconds=10] - 最大等待时间（单位：秒）
+ * @returns {Promise<void>} - 表示等待完成的 Promise
+ */
+function randomWait(minSeconds = 0, maxSeconds = 10) {
+    const randomSeconds = Math.random() * (maxSeconds - minSeconds) + minSeconds;
+    console.log(`等待 ${randomSeconds} 秒`);
     return new Promise(resolve => {
         setTimeout(() => {
-            resolve();  
+            resolve();
         }, randomSeconds * 1000);
-    })
+    });
 }
 
+// function generateRandomString(length) {
+//     let result = '';
+//     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*';
+//     const charactersLength = characters.length;
+//     for (let i = 0; i < length; i++) {
+//       result += characters.charAt(Math.floor(Math.random() * charactersLength));
+//     }
+//     console.log(result)
+//     return result;
+// }
+
+/**
+ * 生成一个包含大小写字母、数字和特殊符号的随机字符串。
+ * @param {number} length - 生成的字符串的长度。
+ * @returns {string} - 生成的随机字符串。
+ */
 function generateRandomString(length) {
+    const uppercaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercaseLetters = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const specialSymbols = '.!@#$%^&*()-_=+';
+    const allCharacters = uppercaseLetters + lowercaseLetters + numbers + specialSymbols;
     let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  
+    // 随机选择至少 3 个大写字母
+    for (let i = 0; i < 3; i++) {
+      result += uppercaseLetters.charAt(Math.floor(Math.random() * uppercaseLetters.length));
     }
+    
+    // 随机选择至少 3 个小写字母
+    for (let i = 0; i < 3; i++) {
+      result += lowercaseLetters.charAt(Math.floor(Math.random() * lowercaseLetters.length));
+    }
+  
+    // 随机选择至少 3 个数字
+    for (let i = 0; i < 3; i++) {
+      result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    }
+  
+    // 随机选择至少 3 个特殊符号
+    for (let i = 0; i < 3; i++) {
+      result += specialSymbols.charAt(Math.floor(Math.random() * specialSymbols.length));
+    }
+  
+    // 随机选择剩余字符，直到达到指定长度
+    for (let i = result.length; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * allCharacters.length);
+      result += allCharacters.charAt(randomIndex);
+    }
+  
+    // 将生成的字符随机排序
+    const array = result.split('');
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    result = array.join('');
+    // console.log(result);
     return result;
   }
-
+  
+// generateRandomString(18);
 // generateTransactionData("claim(address,uint256,uint256,address,uint256,(bytes32[],uint256,uint256,address),bytes)", ["0x558eD78A8Ca9b69d59f0b6193C1f78fB4A8f7b88", 0, 1, '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 0, [["0x0000000000000000000000000000000000000000000000000000000000000000"], 1, 0, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"], '0x']);
 // generateTransactionData("safeMint(address,uint256)", ["0x85Df5B43Ad158B1860834C0ffcb59bf70e191347",1]);
 // parseTransactionData(['((address,bytes,address,bytes)[],address,uint256)[]', 'uint256', 'uint256'],'0x2cc4081e0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000010fbbd0000000000000000000000000000000000000000000000000000000064abb09f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000221b262dd80000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000080115c708e12edd42e504c1cd52aea96c547c05c00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000600000000000000000000000005aea5775959fbc2557cc8789bc1bf90a239d9a91000000000000000000000000c5aba5066dad7108c08646733235a498794a714000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000')

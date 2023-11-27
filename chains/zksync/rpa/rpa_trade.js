@@ -2,81 +2,83 @@ import { MetaMaskUtil } from "../../../browser/metamask.js";
 
 export class RPATradeUtil extends MetaMaskUtil {
 
-    constructor(browserId) {
-        super(browserId);
+    constructor(browserId, enPassword) {
+        super(browserId, enPassword);
     }
 
     async selectTokenPair(projectName, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector, searchTokenSelector}) {
-        // searchTokenSelector不用了。有更好的方法了。逐步改掉
-        let fromToken, toToken, value;
-        // 确定fromToken
-        while(true){
-            fromToken = tokens[Math.floor(Math.random() * tokens.length)];
-            console.log(`fromToken: ${fromToken}`)
-            const fromTokenText = await fromTokenEle.textContent()
-            console.log(`fromTokenText: ${fromTokenText}`)
-            if (fromTokenText != fromToken){
-                fromTokenEle.click()
-                await this.page.waitForTimeout(100)
-                // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
-                if(fromToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
-                    await this.page.getByPlaceholder(searchSelector).fill(fromToken)
+        try{
+            // searchTokenSelector不用了。有更好的方法了。逐步改掉
+            let fromToken, toToken, value;
+            // 确定fromToken
+            while(true){
+                fromToken = tokens[Math.floor(Math.random() * tokens.length)];
+                console.log(`fromToken: ${fromToken}`)
+                const fromTokenText = await fromTokenEle.textContent()
+                console.log(`fromTokenText: ${fromTokenText}`)
+                if (fromTokenText != fromToken){
+                    fromTokenEle.click()
+                    await this.page.waitForTimeout(100)
+                    // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
+                    if(fromToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
+                        await this.page.getByPlaceholder(searchSelector).fill(fromToken)
+                    }
+                    await this.page.waitForTimeout(100)
+                    const tokenEle = await this.page.$$(`text=/(^${fromToken}$)/i`)
+                    // console.log(tokenEle.length)
+                    if(tokenEle.length === 1) {
+                        await tokenEle[0].click()
+                    }else{
+                        await tokenEle[1].click()
+                    }
+                    // await this.page.locator(searchTokenSelector).getByText(fromToken, { exact: true }).click()
+                    await this.page.waitForTimeout(100)
+                    await this.page.click('body', { position: {  x: 50, y: 300 } });  
                 }
                 await this.page.waitForTimeout(100)
-                const tokenEle = await this.page.$$(`text=/(^${fromToken}$)/i`)
-                // console.log(tokenEle.length)
-                if(tokenEle.length === 1) {
-                    await tokenEle[0].click()
-                }else{
-                    await tokenEle[1].click()
+                await this.page.locator('text=/(^MAX$|^100%$)/').click()
+                await this.page.waitForTimeout(1000)
+                value = await fromTokenInputEle.getAttribute('value')
+                console.log(`value: ${value}`) // type:string
+                const valueNumber = Number(value);
+                if (valueNumber) {
+                    break;
                 }
-                // await this.page.locator(searchTokenSelector).getByText(fromToken, { exact: true }).click()
-                await this.page.waitForTimeout(100)
-                await this.page.click('body', { position: {  x: 50, y: 300 } });  
+            }
+            // 避免兑换出去太多代币
+            if(fromToken === 'ETH') {
+                if (value > '0.003') {
+                    value = 0.003
+                    value = `${(Math.random() * (value - 0.001) + 0.001).toFixed(3)}`; // 随机选择0.001-0.008之间的一个数
+                }
+                await fromTokenInputEle.fill(value)
+            }else{
+                value = `${(Math.random() * (Number(value) - 1) + 1).toFixed(3)}`
+                await fromTokenInputEle.fill(value)
+            }
+            console.log(`value: ${value}`) // type:string
+
+            // 确定toToken
+            while(true){
+                toToken = tokens[Math.floor(Math.random() * tokens.length)];
+                if(toToken != fromToken) {break}
             }
             await this.page.waitForTimeout(100)
-            await this.page.locator('text=/(^MAX$|^100%$)/').click()
-            await this.page.waitForTimeout(1000)
-            value = await fromTokenInputEle.getAttribute('value')
-            console.log(`value: ${value}`) // type:string
-            const valueNumber = Number(value);
-            if (valueNumber) {
-                break;
+            const toTokenText = await toTokenEle.textContent()
+            if (toTokenText != toToken){
+                await toTokenEle.click()
+                // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
+                if(toToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
+                    await this.page.getByPlaceholder(searchSelector).fill(toToken)
+                }
+                await this.page.waitForTimeout(500)
+                await this.page.locator(searchTokenSelector).getByText(toToken, { exact: true }).click()
             }
-        }
-        // 避免兑换出去太多代币
-        if(fromToken === 'ETH') {
-            if (value > '0.008') {
-                value = 0.008
-                value = `${(Math.random() * (value - 0.001) + 0.001).toFixed(3)}`; // 随机选择0.001-0.008之间的一个数
-            }
-            await fromTokenInputEle.fill(value)
-        }else{
-            value = `${(Math.random() * (Number(value) - 1) + 1).toFixed(3)}`
-            await fromTokenInputEle.fill(value)
-        }
-        console.log(`value: ${value}`) // type:string
-
-        // 确定toToken
-        while(true){
-            toToken = tokens[Math.floor(Math.random() * tokens.length)];
-            if(toToken != fromToken) {break}
-        }
-        await this.page.waitForTimeout(100)
-        const toTokenText = await toTokenEle.textContent()
-        if (toTokenText != toToken){
-            await toTokenEle.click()
-            // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
-            if(toToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
-                await this.page.getByPlaceholder(searchSelector).fill(toToken)
-            }
-            await this.page.waitForTimeout(500)
-            await this.page.locator(searchTokenSelector).getByText(toToken, { exact: true }).click()
-        }
-        // 随便点一个地方。izumi需要
-        await this.page.click('body', { position: {  x: 50, y: 300 } });  
-        await this.page.waitForTimeout(5000)
-        return { fromToken, toToken, value }
+            // 随便点一个地方。izumi需要
+            await this.page.click('body', { position: {  x: 50, y: 300 } });  
+            await this.page.waitForTimeout(5000)
+            return { fromToken, toToken, value }
+        }catch(error){console.log(error)}
     }
 
     async rpaSyncApproveToken(projectInfo) {

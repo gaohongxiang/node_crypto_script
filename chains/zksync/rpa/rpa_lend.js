@@ -2,8 +2,8 @@ import { MetaMaskUtil } from "../../../browser/metamask.js";
 
 export class RPALendUtil extends MetaMaskUtil {
 
-    constructor(browserId) {
-        super(browserId);
+    constructor(browserId, enPassword) {
+        super(browserId, enPassword);
     }
 
     async rpaEraLend(projectInfo) {

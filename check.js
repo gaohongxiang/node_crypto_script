@@ -5,11 +5,12 @@ import { myFormatData } from "./formatdata.js";
 async function check(startNum, endNum=null) {
     const data = await myFormatData(startNum, endNum)
     for(const d of data) {
-        // console.log(d)
+        const address = d['address'].toLowerCase()
+        // console.log(address)
         try{
             const response = await axios({
                 method: 'GET',
-                url: `https://pandora.lifeform.cc/lifeform_bsc_prod/api/v2/public/checkWhiteList?account=${d['address']}`,
+                url: `https://pacific-1.albatross.sei-internal.com/eligibility?originAddress=${address}`,
                 headers: { accept: 'application/json', 'content-type': 'application/json' },
                 // data: {
                 //     id: 1,

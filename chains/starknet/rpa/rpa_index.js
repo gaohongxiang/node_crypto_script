@@ -1,8 +1,8 @@
 import { myFormatData } from "../../../formatdata.js";
 import { randomWait } from '../../../utils/utils.js';
 import { RPATradeUtil } from "./rpa_trade.js";
-// import { RPANftUtil } from "./rpa_nft.js";
-// import { RPALendUtil } from "./rpa_lend.js";
+import { RPANftUtil } from "./rpa_nft.js";
+import { RPALendUtil } from "./rpa_lend.js";
 import { RPASendMsgUtil } from "./rpa_sendMsg.js";
 
 const projectInfos = {
@@ -35,6 +35,21 @@ const projectInfos = {
                     "website":"https://app.avnu.fi/en",
                     "contractAddress": "0x4270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f"
                 },
+                {
+                    "name": "starkex",
+                    "website":"https://app.starkex.org/",
+                    "contractAddress": "0x7ebd0e95dfc4411045f9424d45a0f132d3e40642c38fdfe0febacf78cc95e76"
+                },
+                {
+                    "name": "rpaFibrous",
+                    "website":"https://app.fibrous.finance/",
+                    "contractAddress": "0x3201e8057a781dca378564b9d3bbe9b5b7617fac4ad9d9deaa1024cf63f877e"
+                },
+                {
+                    "name": "rpaZklend",
+                    "website":"https://app.zklend.com/dashboard",
+                    "contractAddress": "0x4c0a5193d58f74fbace4b74dcf65481e734ed1714121bdc571da345540efa05"
+                },
                 
             ]
         },
@@ -51,24 +66,28 @@ const projectInfos = {
                 // },
             ]
         },
-        // {
-        //     "name": "rpaMintNft",
-        //     "projects": [
-        //         {
-        //             "name": "rpaZksNetwork",
-        //             "website":"https://zks.network/"
-        //         },
-        //     ]
-        // },
-        // {
-        //     "name": "rpaLend",
-        //     "projects": [
-        //         {
-        //             "name": "rpaEraLend",
-        //             "website":"https://app.eralend.com/"
-        //         }
-        //     ]
-        // },
+        {
+            "name": "rpaMintNft",
+            "projects": [
+                {
+                    "name": "starknetId",
+                    "website":"https://app.starknet.id/identities"
+                },
+                {
+                    "name": "rpaZksNetwork",
+                    "website":"https://zks.network/"
+                },
+            ]
+        },
+        {
+            "name": "rpaLend",
+            "projects": [
+                {
+                    "name": "rpaZkLend",
+                    "website":"https://app.zklend.com/dashboard"
+                },
+            ]
+        },
         {
             "name": "rpaSendMsg",
             "projects": [
@@ -82,7 +101,7 @@ const projectInfos = {
     ]
 }
 
-const getProject = (isTest=false, action='rpaTrade', project='rpaJediSwap')=>{
+const getProject = (isTest=false, action='rpaLend', project='rpaZkLend')=>{
     // 随机选一个动作。可能是兑换代币，可能是mint nft。。。
     const actions = projectInfos['actions']      
     let randomAction, randomProject
@@ -118,38 +137,39 @@ const main = (async(startNum, endNum=null)=>{
             console.log(`第${d['index_id']}个账号开始执行任务`)
             // console.log(d)
             const { randomAction, randomProject } = getProject()
+            // const { randomAction, randomProject } = getProject(true, 'rpaTrade', 'rpaJediSwap')
             if (randomAction.name === 'rpaApprove') {                
-                const rpaTrade = new RPATradeUtil(d['browser_id']);
+                const rpaTrade = new RPATradeUtil(d['browser_id'], d['enPassword']);
                 await rpaTrade.start()
                 await rpaTrade.rpaApproveToken(randomProject)
                 await rpaTrade.stop()
             }else if (randomAction.name === 'rpaTrade') {                
-                const rpaTrade = new RPATradeUtil(d['browser_id']);
+                const rpaTrade = new RPATradeUtil(d['browser_id'], d['enPassword']);
                 await rpaTrade.start()
                 if(randomProject.name === 'rpaJediSwap') {
                     await rpaTrade.rpaJediSwapToken(randomProject)
                 }else if(randomProject.name === 'rpa10kSwap') {
                     await rpaTrade.rpa10kSwapToken(randomProject)
                 }
-                await rpaTrade.stop()
+                // await rpaTrade.stop()
             }else if (randomAction.name === 'rpaMintNft') {                
-                const rpaNft = new RPANftUtil(d['browser_id']);
+                const rpaNft = new RPANftUtil(d['browser_id'], d['enPassword']);
                 await rpaNft.start()
-                if(randomProject.name === 'rpaZksNetwork') {
-                    await rpaNft.rpaZksNetworkMintDomain(randomProject)
-                }else if(randomProject.name === 'rpaL2telegraph') {
-                    await rpaNft.rpaL2telegraph(randomProject)
+                if(randomProject.name === 'starknetId') {
+                    await rpaNft.starknetId(randomProject)
                 }
                 await rpaNft.stop()
             }else if (randomAction.name === 'rpaLend') {
-                const rpaLend = new RPALendUtil(d['browser_id']);
+                const rpaLend = new RPALendUtil(d['browser_id'], d['enPassword']);
                 await rpaLend.start()
-                if(randomProject.name === 'rpaEraLend') {
-                    await rpaLend.rpaEraLend(randomProject)
+                if(randomProject.name === 'rpaZkLend') {
+                    const { randomProject: randomTradeProject } = getProject(true, 'rpaTrade', 'rpaJediSwap' )
+                    // console.log(randomTradeProject)
+                    await rpaLend.rpaZkLend(randomProject, randomTradeProject)
                 }
-                await rpaLend.stop()
+                // await rpaLend.stop()
             }else if (randomAction.name === 'rpaSendMsg') {
-                const rpaSendMsg = new RPASendMsgUtil(d['browser_id']);
+                const rpaSendMsg = new RPASendMsgUtil(d['browser_id'], d['enPassword']);
                 await rpaSendMsg.start()
                 if(randomProject.name === 'rpaDmail') {
                     await rpaSendMsg.rpaDmail(randomProject, d['gmail'])
@@ -158,10 +178,10 @@ const main = (async(startNum, endNum=null)=>{
             }  
             // 当数组长度大于1并且不是最后一个元素时随机等待（范围0-maxSeconds）
             if(data.length > 1 && i< data.length-1){
-                await randomWait(3200)
+                await randomWait(1800,7200)
             }
         }
     }catch(error){console.log(error)}
 });
 
-await main(16,20);
+await main(19,20);

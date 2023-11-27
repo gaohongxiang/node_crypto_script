@@ -1,13 +1,12 @@
 import { BitBrowserUtil } from './bitbrowser.js';
-import { password } from '../config.js';
-import { parseToken } from "../crypt_module/onepassword.js";
-
-process.env.password = await parseToken(password)
+import { decryptText } from '../crypt_module/crypt_text.js';
+import { myFormatData } from '../formatdata.js';
 
 export class MetaMaskUtil extends BitBrowserUtil {
     
-    constructor(browserId) {
+    constructor(browserId, enPassword) {
         super(browserId);
+        this.enPassword = enPassword
         this.homeUrl = 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#'
         this.initializeUrl = 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#onboarding/welcome'
         this.unlockUrl = 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#unlock'
@@ -18,15 +17,93 @@ export class MetaMaskUtil extends BitBrowserUtil {
         this.chainlistUrl = 'https://chainlist.org/'
     }
 
+    async firstImportByMnemonic() {
+        try{
+            const password = await decryptText(this.enPassword)
+            
+            await this.page.goto(this.initializeUrl)
+            await this.page.waitForTimeout(3000)
+            if(this.page.url() !== this.initializeUrl){
+                return
+            }
+            await this.page.locator('//input[@id="onboarding__terms-checkbox"]').click()
+            await this.page.getByTestId('onboarding-import-wallet').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('metametrics-i-agree').click()
+            await this.page.waitForTimeout(500)
+            const mnemonic = 'canal share close outer away ignore mutual alert fiber upon south garlic'
+            const words = mnemonic.split(' ');
+            // console.log(words)
+            await this.page.locator('//input[@id="import-srp__srp-word-0"]').fill(words[0])
+            await this.page.locator('//input[@id="import-srp__srp-word-1"]').fill(words[1])
+            await this.page.locator('//input[@id="import-srp__srp-word-2"]').fill(words[2])
+            await this.page.locator('//input[@id="import-srp__srp-word-3"]').fill(words[3])
+            await this.page.locator('//input[@id="import-srp__srp-word-4"]').fill(words[4])
+            await this.page.locator('//input[@id="import-srp__srp-word-5"]').fill(words[5])
+            await this.page.locator('//input[@id="import-srp__srp-word-6"]').fill(words[6])
+            await this.page.locator('//input[@id="import-srp__srp-word-7"]').fill(words[7])
+            await this.page.locator('//input[@id="import-srp__srp-word-8"]').fill(words[8])
+            await this.page.locator('//input[@id="import-srp__srp-word-9"]').fill(words[9])
+            await this.page.locator('//input[@id="import-srp__srp-word-10"]').fill(words[10])
+            await this.page.locator('//input[@id="import-srp__srp-word-11"]').fill(words[11])
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('import-srp-confirm').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('create-password-new').fill(password)
+            await this.page.getByTestId('create-password-confirm').fill(password)
+            await this.page.getByTestId('create-password-terms').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('create-password-import').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('onboarding-complete-done').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('pin-extension-next').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('pin-extension-done').click()
+            await this.page.waitForTimeout(500)
+            try{
+                await this.page.getByTestId('popover-close').click()
+            }catch(error){console.log(error)}
+        }catch(error){console.log(error)}
+    }
+
+    async importByPrivateKey(enPrivateKey, accountName) {
+        try{
+            const privateKey = await decryptText(enPrivateKey)
+            await this.page.goto(this.homeUrl)
+            await this.page.waitForTimeout(1000)
+            await this.page.getByTestId('account-menu-icon').click()
+            await this.page.locator('//button[text()="导入账户"]').click()
+            await this.page.locator('//input[@id="private-key-box"]').fill(privateKey)
+            await this.page.waitForTimeout(500)
+            await this.page.getByTestId('import-account-confirm-button').click()
+            await this.page.waitForTimeout(1000)
+            await this.page.getByTestId('account-options-menu-button').click()
+            await this.page.getByTestId('account-list-menu-details').click()
+            await this.page.getByTestId('editable-label-button').click()
+            await this.page.waitForTimeout(500)
+            await this.page.getByPlaceholder('账户名称').fill(accountName)
+            await this.page.waitForTimeout(500)
+            await this.page.locator('//div[@data-testid="editable-input"]/following-sibling::button').click()
+            await this.page.waitForTimeout(500)
+            await this.page.locator('//button[@aria-label="关闭"]').click()
+            // await this.page.getByTestId('popover-close').click()
+            await this.page.waitForTimeout(2000)
+        }catch(error){console.log(error)}
+    }
+
+
     async unlock() {
-        await this.page.goto(this.unlockUrl, { waitUntil:'networkidle', timeout:10000 });
-        await this.page.waitForTimeout(2000)
+        const password = await decryptText(this.enPassword)
+        await this.page.goto(this.unlockUrl);
+        // await this.page.goto(this.unlockUrl, { waitUntil:'networkidle', timeout:10000 });
+        await this.page.waitForTimeout(3000)
         // console.log(this.page.url())
         if (this.page.url() === this.unlockUrl) {
             const isExist = await this.isElementExist('#password', 7)
-            // console.log(isExist)
-            if(isExist) {    
-                await this.page.locator('#password').fill(process.env.password); 
+            console.log(isExist)
+            if(isExist) {
+                await this.page.locator('#password').fill(password); 
                 await this.page.click('text="登录"');    
                 await this.page.waitForTimeout(500);  
             } else {
@@ -36,75 +113,99 @@ export class MetaMaskUtil extends BitBrowserUtil {
     }
 
     async changeChain(chain) {
-        chain = chain.toLowerCase()
-        await this.page.goto(this.homeUrl, { waitUntil:'networkidle', timeout:10000 })
-        await this.page.waitForTimeout(1000)
-        const chainButton = await this.page.locator('//button[@data-testid="network-display"]/p')
-        let currentChain = await chainButton.textContent()
-        currentChain = currentChain.toLowerCase()
-        // console.log(currentChain)
-        if (currentChain.includes(chain)) {
-            return
-        }
-        await chainButton.click();
-        await this.page.waitForTimeout(1000)
-        // 打开‘显示测试网按钮’
         try{
-            await this.page.waitForSelector('.toggle-button--off', {timeout:2000}).then(element => { element.click() });
-        }catch(error){}
-        try{
-            const targetChain = await this.page.waitForSelector(`text=/(^${chain})/i`, {timeout:3000});
-            await targetChain.click()
-            // console.log(targetChain)
-        }catch(error){
-            console.log('没有要切换的链，去添加')
-            console.log(error)
-            this.addChain(chain)
-        }
-        await this.page.waitForTimeout(1000)
+            chain = chain.toLowerCase()
+            await this.page.goto(this.homeUrl, { waitUntil:'networkidle', timeout:10000 })
+            await this.page.waitForTimeout(1000)
+            const chainButton = await this.page.locator('//button[@data-testid="network-display"]/p')
+            let currentChain = await chainButton.textContent()
+            currentChain = currentChain.toLowerCase()
+            // console.log(currentChain)
+            if (currentChain.includes(chain)) {
+                return
+            }
+            await chainButton.click();
+            await this.page.waitForTimeout(1000)
+            // 打开‘显示测试网按钮’
+            try{
+                await this.page.waitForSelector('.toggle-button--off', {timeout:2000}).then(element => { element.click() });
+            }catch(error){}
+            try{
+                const targetChain = await this.page.waitForSelector(`text=/(^${chain})/i`, {timeout:3000});
+                await targetChain.click()
+                // console.log(targetChain)
+                try{
+                    await this.page.waitForSelector('//button[text()="明白了"]', {timeout:3000}).then(element => { element.click() }); // 关闭提示
+                    await this.page.waitForTimeout(1000)
+                }catch(error){}
+            }catch(error){
+                console.log('没有要切换的链，去添加')
+                // console.log(error)
+                await this.addChain(chain)
+            }
+            await this.page.waitForTimeout(3000)
+        }catch(error){console.log(error)}
     }
 
     async addChain(chain) {
-        await this.page.goto(this.chainlistUrl);
-        await this.page.waitForTimeout(2000)
         try{
-            // 登录按钮
-            await this.page.waitForSelector('text=/(^Connect Wallet$)/i', {timeout:5000}).then(element => { element.click() });
+            await this.page.goto(this.chainlistUrl);
+            await this.page.waitForTimeout(2000)
+            try{
+                // 登录按钮
+                await this.page.waitForSelector('text=/(^Connect Wallet$)/i', {timeout:5000}).then(element => { element.click() });
+                await this.page.waitForTimeout(3000)
+                const metamaskPage = await this.context.newPage()
+                await metamaskPage.goto(this.homeUrl, {waitUntil:'networkidle', timeout:10000})
+                try{
+                    await this.page.waitForTimeout(3000)
+                    await metamaskPage.waitForSelector('text=/(^下一步$|^next$)/i', {timeout:3000}).then(element => { element.click() });
+                }catch(error) {console.log('不用点击下一步按钮')}
+                await metamaskPage.waitForSelector('text=/(^连接$|^connect$)/i', {timeout:5000}).then(element => { element.click() });
+                await this.page.waitForTimeout(2000)
+                // 将page页面带到前台
+                await metamaskPage.close()
+            }catch(error){}
             await this.page.waitForTimeout(1000)
+            await this.page.locator('//span[text()="Search Networks"]/following-sibling::input').fill(chain);
+            await this.page.waitForTimeout(1000);
+            //可能有多个。选第一个
+            const eles = await this.page.$$('//button[text()="Add to Metamask"]')
+            await eles[0].click()
+            await this.page.waitForTimeout(3000);
             const metamaskPage = await this.context.newPage()
             await metamaskPage.goto(this.homeUrl, {waitUntil:'networkidle', timeout:10000})
-            try{
-                await metamaskPage.waitForSelector('text=/(^下一步$|^next$)/i', {timeout:3000}).then(element => { element.click() });
-            }catch(error) {console.log('不用点击下一步按钮')}
-            await metamaskPage.waitForSelector('text=/(^连接$|^connect$)/i', {timeout:5000}).then(element => { element.click() });
+            await this.page.waitForTimeout(3000)
+            await metamaskPage.waitForSelector('text=/(^批准$)/i', {timeout:3000}).then(element => { element.click() });
             await this.page.waitForTimeout(1000)
-        }catch(error){}
-        await this.page.locator('//span[text()="Search Networks"]/following-sibling::input').fill(chain);
-        await this.page.waitForTimeout(1000);
-        await this.page.getByText('Add to Metamask', {exact: true}).click();
-        const metamaskPage = await this.context.newPage()
-        await metamaskPage.goto(this.homeUrl, {waitUntil:'networkidle', timeout:10000})
-        await this.page.waitForTimeout(2000)
-        await metamaskPage.waitForSelector('text=/(^批准$)/i', {timeout:3000}).then(element => { element.click() });
-        await this.page.waitForTimeout(500)
-        await metamaskPage.waitForSelector('text=/(^切换网络$)/i', {timeout:3000}).then(element => { element.click() });    
+            await metamaskPage.waitForSelector('text=/(^切换网络$)/i', {timeout:3000}).then(element => { element.click() });
+            await this.page.waitForTimeout(2000)
+            try{
+                await metamaskPage.waitForSelector('//button[text()="明白了"]', {timeout:3000}).then(element => { element.click() }); // 关闭提示
+                await this.page.waitForTimeout(1000)
+            }catch(error){}
+            await metamaskPage.close()
+            await this.page.waitForTimeout(3000)
+        }catch(error){console.log(error)}
     }
 
     async changeAccount(accountName='1撸毛') {
-        // 切换到交互账户，比如撸毛账户、土狗账户
-        await this.page.goto(this.homeUrl, { waitUntil:'networkidle', timeout:10000 })
-        // 判断当前钱包是不是要用的那个，如果不是就切换到第二个钱包(默认用第二个钱包，是导入的)
-        // 通过账户名来来判断。比如撸毛账户和土狗账户
-        const text = await this.page.locator('//*[@data-testid="account-menu-icon"]/span/span[1]').textContent()
-        if (text === accountName) {
-            return
-        }
-        // 点击账户图标
-        await this.page.locator('//*[@data-testid="account-menu-icon"]').click()
-        // 搜索账户
-        await this.page.getByPlaceholder('搜索账户').fill(accountName);
-        // 点击账户
-        await this.page.locator(`//*[text()="${accountName}"]`).click()
+        try{
+            // 切换到交互账户，比如撸毛账户、土狗账户
+            await this.page.goto(this.homeUrl, { waitUntil:'networkidle', timeout:10000 })
+            // 判断当前钱包是不是要用的那个，如果不是就切换到第二个钱包(默认用第二个钱包，是导入的)
+            // 通过账户名来来判断。比如撸毛账户和土狗账户
+            const text = await this.page.locator('//*[@data-testid="account-menu-icon"]/span/span[1]').textContent()
+            if (text === accountName) {
+                return
+            }
+            // 点击账户图标
+            await this.page.locator('//*[@data-testid="account-menu-icon"]').click()
+            // 搜索账户
+            await this.page.getByPlaceholder('搜索账户').fill(accountName);
+            // 点击账户
+            await this.page.locator(`//*[text()="${accountName}"]`).click()
+        }catch(error){console.log(error)}
     }
 
     async connectWallet(url, {chain='', accountName='1撸毛', hasAnime=false, hasNavigator=false, navigatorButton='text=/(close)/i', hasConnectButton=true, hasMetaMaskButton=true, connectButton='text=/(Connect Wallet?|连接钱包|Login)/i', checkButton='', metamaskButton='text=/(metamask|browser wallet|Ethereum Wallet)/i',signButton='', waitTime=5}) {
@@ -165,9 +266,10 @@ export class MetaMaskUtil extends BitBrowserUtil {
             //     console.log('签名按钮不正确或者不需要签名按钮')
             // }
             const metamaskPage = await this.context.newPage()
-            await metamaskPage.goto(this.homeUrl, {waitUntil:'networkidle', timeout:10000})
+            await metamaskPage.goto(this.homeUrl)
+            // await metamaskPage.goto(this.homeUrl, {waitUntil:'networkidle', timeout:10000})
             await this.page.waitForTimeout(1000)
-            await metamaskPage.reload({waitUntil:'networkidle', timeout:10000})
+            await metamaskPage.reload()
             const currentUrl = metamaskPage.url()
             // console.log(currentUrl)
             // url里有connect字符串代表连接账户。连接
@@ -230,7 +332,7 @@ export class MetaMaskUtil extends BitBrowserUtil {
             value = (Number(value) * 1.1).toFixed(3).toString()
             // console.log(value)
             // console.log(typeof(value))
-            await metamaskPage.locator('#custom-spending-cap').fill(value)
+            await metamaskPage.locator('#custom-spending-cap-input-value').fill(value)
             await metamaskPage.waitForTimeout(2000)
             await metamaskPage.waitForSelector('text=/(^下一步$|^next$)/i', {timeout:10000}).then(element => { element.click() });
             // 修改gas limit。设置为推荐的gasLimitRate倍
@@ -329,10 +431,3 @@ export class MetaMaskUtil extends BitBrowserUtil {
         }catch(error){console.log(error)}
     }
 }
-
-// const metamask = new MetaMaskUtil('aaf7bb46114d410abcb131564383ecd1');
-// await metamask.start()
-// // // await metamask.unlock()
-// // // await metamask.addChain('matic')
-// // await metamask.changeChain('zksync')
-// await metamask.connectWallet('https://syncswap.xyz', {chain:'zksync'})

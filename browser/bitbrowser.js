@@ -42,6 +42,9 @@ export class BitBrowserUtil {
     }
   
     async start(navigationWaitTime=30, allWaitTime=30) {
+        // if(!process.env.ws) {
+        //     process.env.ws = await this.open();
+        // }
         const { ws, chromeDriver, http } = await this.open();
         this.browser = await playwright.chromium.connectOverCDP(ws);
 
@@ -127,7 +130,7 @@ export class BitBrowserUtil {
         return { pages, pagesCount }
     }
 
-    async isElementExist(selector, { waitTime=5, page='' }) { 
+    async isElementExist(selector, { waitTime=5, page='' }={}) { 
         // 判断元素是否存在
         if (!page){ page = this.page } 
         try {
@@ -137,6 +140,26 @@ export class BitBrowserUtil {
             // console.log(error)
             return false
         }       
+    }
+
+    async isEnabled(selector, { waitTime=5, page='' }){
+        // 判断元素是否可操作，如点击
+        if (!page){ page = this.page }
+        const element = await page.$(selector);
+        while(true){
+            let i = 1
+            // 等待元素可用（包括可点击）
+            const isEnabled = await element.isEnabled();
+            console.log(isEnabled)
+            if(isEnabled){
+                await element.click()
+                break
+            }
+            await page.waitForTimeout(10000)
+            // 等待太久退出
+            i++
+            if(i > 8){break}
+        }
     }
 
     pause(page='') {

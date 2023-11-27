@@ -1,10 +1,10 @@
 // zksync-web3继承了ethers。跟zksync交互只需要导入zksync-web3即可。如果需要跟以太坊主网交互还是需要ethers
 import * as zksync from "zksync-web3";
 import * as ethers from "ethers";
-import * as paths from '../../paths.js'
-import * as config from '../../config.js'; // 全部导入。使用:config.alchemyEthMainnetApi
+import * as paths from '../../../paths.js'
+import * as config from '../../../config.js'; // 全部导入。使用:config.alchemyEthMainnetApi
 import { ZksyncUtil } from "./zksync.js";
-import { getInfo, getRandomObject, generateTransactionData } from '../../utils/utils.js';
+import { getInfo, getRandomObject, generateTransactionData } from '../../../utils/utils.js';
 
 const tokenInfos = getInfo(paths.tokenFile, 'zksync')
 

@@ -1,11 +1,11 @@
 import express from 'express'
 import * as zksync from "zksync-web3";
 import * as ethers from "ethers";
-import { decryptText } from "../../crypt_module/crypt_text.js";
-import * as paths from '../../paths.js'
-import { getInfo } from '../../utils/utils.js';
-import { myFormatData } from "../../formatdata.js";
-import { TradeUtil } from "./trade.js";
+import { decryptText } from "../../../crypt_module/crypt_text.js";
+import * as paths from '../../../paths.js'
+import { getInfo } from '../../../utils/utils.js';
+import { myFormatData } from "../../../formatdata.js";
+import { TradeUtil } from "../trade.js";
 import { NftUtil } from "./nft.js";
 
 const ethereumGasPrice = 30

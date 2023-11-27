@@ -2,78 +2,102 @@ import { ArgentXUtil } from "../../../browser/argentx.js";
 
 export class RPATradeUtil extends ArgentXUtil {
 
-    constructor(browserId) {
-        super(browserId);
+    constructor(browserId, enPasswrod) {
+        super(browserId, enPasswrod);
     }
 
-    async selectTokenPair(projectName, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector}) {
-        let fromToken, toToken, value;
-        // 确定fromToken
-        while(true){
-            fromToken = tokens[Math.floor(Math.random() * tokens.length)];
-            console.log(`fromToken: ${fromToken}`)
-            const fromTokenText = await fromTokenEle.textContent()
-            console.log(`fromTokenText: ${fromTokenText}`)
-            if (fromTokenText != fromToken){
-                fromTokenEle.click()
-                await this.page.waitForTimeout(100)
-                const tokenEle = await this.page.$$(`text=/(^${fromToken}$)/i`)
+    async selectTokenPair(projectName, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector, page='', toTokenInputEle='', isFixToToken=false, fixTotoken='USDC', isFixToTokenValue, fixToTokenValue=''}) {
+        try{
+            if (!page){ page = this.page } 
+            let fromToken, toToken, value;
+            // 确定fromToken
+            while(true){
+                // 如果有fixTotoken，先从tokens里删除，再选fromToken
+                if(isFixToToken){
+                    const index = tokens.indexOf(fixTotoken);
+                    if (index !== -1) {tokens.splice(index, 1);}
+                }
+                fromToken = tokens[Math.floor(Math.random() * tokens.length)];
+                console.log(`fromToken: ${fromToken}`)
+                const fromTokenText = await fromTokenEle.textContent()
+                console.log(`fromTokenText: ${fromTokenText}`)
+                if (fromTokenText != fromToken){
+                    fromTokenEle.click()
+                    await page.waitForTimeout(5000)
+                    const tokenEle = await page.$$(`text=/(^${fromToken}$)/i`)
+                    // console.log(tokenEle.length)
+                    if(tokenEle.length === 1) {
+                        await tokenEle[0].click()
+                    }else{
+                        await tokenEle[1].click()
+                    }  
+                }
+                await page.waitForTimeout(5000)
+                await page.locator('text=/(^MAX$|^100%$)/').click()
+                await page.waitForTimeout(3000)
+                value = await fromTokenInputEle.getAttribute('value')
+                console.log(`value: ${value}`) // type:string。'0'为真
+                const valueNumber = Number(value);
+                if (valueNumber) {
+                    break
+                }
+            }
+            // 避免兑换出去太多代币
+            if(fromToken === 'ETH') {
+                if (value > '0.008') {
+                    value = 0.008
+                    value = `${(Math.random() * (value - 0.001) + 0.001).toFixed(3)}`; // 随机选择0.001-0.008之间的一个数
+                }
+                await fromTokenInputEle.fill(value)
+            }else{
+                value = `${(Math.random() * (Number(value) - 1) + 1).toFixed(3)}`
+                await fromTokenInputEle.fill(value)
+            }
+            console.log(`value: ${value}`) // type:string
+
+            if(isFixToToken){
+                toToken = fixTotoken
+            }else{
+                // 确定toToken
+                while(true){
+                    toToken = tokens[Math.floor(Math.random() * tokens.length)];
+                    if(toToken != fromToken) {break}
+                }
+            }
+            await page.waitForTimeout(100)
+            const toTokenText = await toTokenEle.textContent()
+            if (toTokenText != toToken){
+                await toTokenEle.click()
+                // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
+                if(toToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
+                    await page.getByPlaceholder(searchSelector).fill(toToken)
+                }
+                await page.waitForTimeout(500)
+                const tokenEle = await page.$$(`text=/(^${toToken}$)/i`)
                 // console.log(tokenEle.length)
                 if(tokenEle.length === 1) {
                     await tokenEle[0].click()
                 }else{
                     await tokenEle[1].click()
-                }  
+                } 
             }
-            await this.page.waitForTimeout(5000)
-            await this.page.locator('text=/(^MAX$|^100%$)/').click()
-            await this.page.waitForTimeout(3000)
-            value = await fromTokenInputEle.getAttribute('value')
-            console.log(`value: ${value}`) // type:string。'0'为真
-            const valueNumber = Number(value);
-            if (valueNumber) {
-                break;
+            if(isFixToTokenValue){
+                console.log(fixToTokenValue.toString())
+                await toTokenInputEle.fill(fixToTokenValue.toString())
+                console.log('!!!!!!!!!!!!!!!!!!!!')
+                await page.waitForTimeout(3000)
             }
-        }
-        // 避免兑换出去太多代币
-        if(fromToken === 'ETH') {
-            if (value > '0.008') {
-                value = 0.008
-                value = `${(Math.random() * (value - 0.001) + 0.001).toFixed(3)}`; // 随机选择0.001-0.008之间的一个数
-            }
-            await fromTokenInputEle.fill(value)
-        }else{
-            value = `${(Math.random() * (Number(value) - 1) + 1).toFixed(3)}`
-            await fromTokenInputEle.fill(value)
-        }
-        console.log(`value: ${value}`) // type:string
+            // 随便点一个地方。izumi需要
+            await page.click('body', { position: {  x: 50, y: 300 } });  
+            await page.waitForTimeout(5000)
 
-        // 确定toToken
-        while(true){
-            toToken = tokens[Math.floor(Math.random() * tokens.length)];
-            if(toToken != fromToken) {break}
-        }
-        await this.page.waitForTimeout(100)
-        const toTokenText = await toTokenEle.textContent()
-        if (toTokenText != toToken){
-            await toTokenEle.click()
-            // 当项目为rpaSpaceFi，代币为ETH时，不用搜索，直接选下面的。因为搜索了反而没有ETH了，有点傻逼
-            if(toToken !== 'ETH' || !['rpaSpaceFi'].includes(projectName)){
-                await this.page.getByPlaceholder(searchSelector).fill(toToken)
+            //如果余额不足，重新选一个
+            const status = await this.isElementExist(`text=/(^Insufficient ${fromToken} balance$)/i`, { waitTime:15, page:page})
+            if(isFixToTokenValue && status){
+                await this.selectTokenPair(projectName, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector, page, toTokenInputEle, isFixToToken, fixTotoken, isFixToTokenValue, fixToTokenValue}) 
             }
-            await this.page.waitForTimeout(500)
-            const tokenEle = await this.page.$$(`text=/(^${toToken}$)/i`)
-            // console.log(tokenEle.length)
-            if(tokenEle.length === 1) {
-                await tokenEle[0].click()
-            }else{
-                await tokenEle[1].click()
-            }    
-        }
-        // 随便点一个地方。izumi需要
-        await this.page.click('body', { position: {  x: 50, y: 300 } });  
-        await this.page.waitForTimeout(5000)
-        return { fromToken, toToken, value }
+            return { fromToken, toToken, value }
+        }catch(error){console.log(error)}
     }
 
     async rpaApproveToken(projectInfo) {
@@ -107,21 +131,26 @@ export class RPATradeUtil extends ArgentXUtil {
         }catch(error){console.log(error)}
     }
     
-    async rpaJediSwapToken(projectInfo) {
+    async rpaJediSwapToken(projectInfo, {isFixToToken=false, fixTotoken='USDC', isFixToTokenValue=false, fixToTokenValue=2, isThisPage=true}={}) {
         try{
-            await this.connectWallet(projectInfo.website, {hasNavigator:true, navigatorButton:'//div[text()="I understand the risks outlined above"]'})
+            const page = isThisPage ? this.page : await this.newPage();
+            await this.connectWallet(projectInfo.website, {page:page, hasNavigator:true, argentXButton:'//button[@id="connect-argentX"]', navigatorButton:'//div[text()="I understand the risks outlined above"]'})
 
-            const tokens = ['ETH', 'USDC', 'USDT']
-            const fromTokenEle = await this.page.locator('//div[@id="swap-currency-input"]/div/div[2]/button/div/span')
-            const fromTokenInputEle = await this.page.locator('//input[@placeholder="0.0"]').nth(0)
+            const tokens = ['ETH', 'USDC', 'USDT', 'DAI']
+            const fromTokenEle = await page.locator('//input[@placeholder="0.0"]/preceding-sibling::button').nth(0)
+
+            console.log(await fromTokenEle.textContent())
+            const fromTokenInputEle = await page.locator('//input[@placeholder="0.0"]').nth(0)
+            const toTokenInputEle = await page.locator('//input[@placeholder="0.0"]').nth(1)
             // console.log(inputEle.length)
             // const fromTokenInputEle = inputEle[0]
-            const toTokenEle = await this.page.locator('//div[@id="swap-currency-output"]/div/div[2]/button/div/span')
+            // const toTokenEle = await this.page.locator('//div[@id="swap-currency-output"]/div/div[2]/button/div/span')
+            const toTokenEle = await page.locator('//input[@placeholder="0.0"]/preceding-sibling::button').nth(1)
             const searchSelector = 'Search name or paste address'
 
-            await this.selectTokenPair(projectInfo.name, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector})
-            await this.page.waitForTimeout(5000)
-            await this.executeTransaction('//div[text()="Swap"]', {isConfirmPage:true, confirmButton:'//button[@id="confirm-swap-or-send"]' })
+            await this.selectTokenPair(projectInfo.name, tokens, {fromTokenEle, fromTokenInputEle, toTokenEle, searchSelector, page, toTokenInputEle, isFixToToken, fixTotoken, isFixToTokenValue, fixToTokenValue})
+            await page.waitForTimeout(5000)
+            await this.executeTransaction('//div[text()="Swap"]', {page:page, isConfirmPage:true, confirmButton:'//button[@id="confirm-swap-or-send"]' })
         }catch(error){console.log(error)}
     }
 

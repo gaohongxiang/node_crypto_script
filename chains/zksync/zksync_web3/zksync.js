@@ -2,10 +2,10 @@
 import * as zksync from "zksync-web3";
 import * as ethers from "ethers";
 import fs from 'fs';
-import { getInfo } from '../../utils/utils.js';
-import * as paths from '../../paths.js'
-import * as config from '../../config.js'; // 全部导入。使用:config.alchemyEthMainnetApi
-import { myFormatData } from "../../formatdata.js";
+import { getInfo } from '../../../utils/utils.js';
+import * as paths from '../../../paths.js'
+import * as config from '../../../config.js'; // 全部导入。使用:config.alchemyEthMainnetApi
+import { myFormatData } from "../../../formatdata.js";
 // 退出当前进程
 // process.exit();
 

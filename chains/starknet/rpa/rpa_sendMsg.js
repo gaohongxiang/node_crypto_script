@@ -3,8 +3,8 @@ import { generateRandomString, randomWait } from "../../../utils/utils.js";
 
 export class RPASendMsgUtil extends ArgentXUtil {
 
-    constructor(browserId) {
-        super(browserId);
+    constructor(browserId, enPasswrod) {
+        super(browserId, enPasswrod);
     }
 
     async rpaDmail(project, email) {
@@ -12,6 +12,7 @@ export class RPASendMsgUtil extends ArgentXUtil {
             await this.connectWallet(project.loginWebsite, {connectButton:'div.starknet', hasSignButton:true, signButton:'//p[text()="Argent X"]'})
             await this.page.waitForTimeout(20000)
             try{
+                await this.page.waitForSelector('text=/(^next step$)/i', {timeout:3000}).then(element => { element.click() });
                 await this.page.waitForSelector('text=/(^Launch$)/', {timeout:3000}).then(element => { element.click() });
             }catch(error){console.log(error)}
             const randomNum = Math.floor(Math.random() * 5) + 1; //1-5之间的随机整数

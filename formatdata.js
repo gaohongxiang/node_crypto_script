@@ -45,6 +45,7 @@ async function readCsvFileAsArray(filePath, sep=',') {
   const adspowerFile = './data/adspower.xlsx'
   const ipFile = './data/ip.csv'
   const ethWalletFile = './data/wallet_eth.csv'
+  const walletPasswordFile = './data/wallet_password.csv'
   const ethWalletTugouFile = './data/wallet_eth_tugou.csv'
   const ethWalletFuzhuFile = './data/wallet_eth_fuzhu.csv'
   const okxAddressFile = './data/okx_address.csv'
@@ -71,6 +72,7 @@ async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
     // 读取CSV文件
     const allIp = await readCsvFileAsArray(ipFile, ':'); //分割符是冒号
     const allWallet = await readCsvFileAsArray(ethWalletFile);
+    const allPassword = await readCsvFileAsArray(walletPasswordFile);
     const allWalletTogou = await readCsvFileAsArray(ethWalletTugouFile);
     const allWalletFuzhu = await readCsvFileAsArray(ethWalletFuzhuFile);
     const allWalletArgent = await readCsvFileAsArray(argentWalletFile);
@@ -85,6 +87,7 @@ async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
         ...allIp[index],
         proxy: proxy,
         ...allWallet[index],
+        ...allPassword[index],
         ...allWalletTogou[index],
         ...allWalletFuzhu[index],
         ...allWalletArgent[index],

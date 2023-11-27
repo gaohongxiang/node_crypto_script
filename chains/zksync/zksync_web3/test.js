@@ -1,10 +1,10 @@
 import * as zksync from "zksync-web3";
 import * as ethers from "ethers";
 import { TradeUtil } from "./trade.js";
-import { decryptText } from "../../crypt_module/crypt_text.js";
-import * as paths from '../../paths.js'
-import { getInfo, generateTransactionData } from '../../utils/utils.js';
-import { myFormatData } from "../../formatdata.js";
+import { decryptText } from "../../../crypt_module/crypt_text.js";
+import * as paths from '../../../paths.js'
+import { getInfo, generateTransactionData } from '../../../utils/utils.js';
+import { myFormatData } from "../../../formatdata.js";
 
 const zksyncProvider = new zksync.Provider('https://mainnet.era.zksync.io'); // zksync era 节点
 const ethereumProvider = new ethers.providers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/KsQRrJb04s-adwpiSUoSr73lgTiIVmHX'); // 以太坊主网节点
