@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import fs from 'fs';
 
-const provider = new ethers.JsonRpcProvider("https://eth-goerli.g.alchemy.com/v2/6zqOTkgdaQcAawejkn_8KqReqbIoYwvg");
+const provider = new ethers.JsonRpcProvider("");
 
 // 配置空投合约和 ERC20 代币合约的地址和 ABI
 const airdropContractAddress = "0x96fe324b73329f97cCc6da1EE8A4E3ecEd7FD4Eb"; // 领取合约地址
@@ -17,14 +17,14 @@ const erc20TokenContractABI = [
 
 const amount = ethers.parseEther('0.03')
 
-const mainWallet = new ethers.Wallet('c569aae3537b102b294f8bfe3c6d9b969c222805e67318ba08a12e5c9724a54a', provider)
+const mainWallet = new ethers.Wallet('', provider)
 
 async function claimAirdrop() {
 	const data = myData();
 	// map() 返回的是一个数组,这个数组包含了所有异步任务。Promise.all(),并行执行这些任务。这里不用for of循环的原因是后者是顺序执行每个任务完成，再执行下一个任务。多个账号同时领空投的话肯定并行更合适。
 	const results = await Promise.allSettled(data.map(async ({ privateKey, address }) => {
 		// 使用统一的提供者对象provider时，当发生错误时只捕获了一个私钥的错误。查了很久，目前解决方案是为每个异步操作创建独立的提供者对象，以避免可能的竞争条件和共享状态问题。
-		const batchWallet = new ethers.Wallet(privateKey, new ethers.JsonRpcProvider('https://eth-goerli.g.alchemy.com/v2/6zqOTkgdaQcAawejkn_8KqReqbIoYwvg'));
+		const batchWallet = new ethers.Wallet(privateKey, new ethers.JsonRpcProvider(''));
 		// const batchWallet = new ethers.Wallet(privateKey, provider);
 		const airdropContract = new ethers.Contract(airdropContractAddress, airdropContractABI, batchWallet);
 		const erc20TokenContract = new ethers.Contract(erc20TokenContractAddress, erc20TokenContractABI, batchWallet);

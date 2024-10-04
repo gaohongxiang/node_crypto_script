@@ -269,20 +269,20 @@ for (const d of data) {
     await myEthers.getNetwork();
     // await myEthers.mint(d['enPrivateKey']);
 
-    // myEthers.getTransactionCount('0x4D00210444949bBA6353bf1b0ae6e755404071Bf')
-    // myEthers.getBalance('0x6cD70ffeb89373D89712BB5347e34F4680497586', 'PEOPLE');
+    // myEthers.getTransactionCount('')
+    // myEthers.getBalance('', 'PEOPLE');
     myEthers.getGasInfo();
     // blockNumber = myEthers.getLastBlockNumber();
     // myEthers.getBlockInfo(blockNumber)
-    // myEthers.getBytecode('0xc778417e063141139fce010982780140aa0cd5ab')
-    // myEthers.getTokenAbi('0xF57e7e7C23978C3cAEC3C3548E3D615c346e79fF')
+    // myEthers.getBytecode('')
+    // myEthers.getTokenAbi('')
 
     // 获取代币信息
     // 参数tokenAddr, tokenAbi = []（传惨为[]的话代表自动从ethscan获取abi
-    // myEthers.getTokenInfo('0x6B175474E89094C44Da98b954EedeAC495271d0F', []);
+    // myEthers.getTokenInfo('', []);
 
-    // myEthers.sendToken('people', '0x696a83dc8503134e97e28a53fe06ccbd3779e180834507e53c6c4ed3db37dd9b', '0x12E216FE19D38194d51ec7Fb6a37C30bf9D6b026', 0.01);
-    // myEthers.sendErc20Token('0x326C977E6efc84E512bB9C30f76E30c160eD06FB', [
+    // myEthers.sendToken('people', '', '', 0.01);
+    // myEthers.sendErc20Token('', [
     // 		'function name() view returns (string)',
     //         'function symbol() view returns (string)',
     //         'function totalSupply() view returns (uint256)',
@@ -290,12 +290,12 @@ for (const d of data) {
     //         'function deposit() public payable',
     //         'function transfer(address, uint) public returns (bool)',
     //         'function withdraw(uint) public',
-    //     ], '0xa926c3f24698e65e119e9deb99e8df57e5b664270b7f969ec148124fd0c688bb', '0x12E216FE19D38194d51ec7Fb6a37C30bf9D6b026', 0.001);
+    //     ], '', '', 0.001);
     //     // eth主网usdt
-    // myEthers.listenContract('0xdac17f958d2ee523a2206206994597c13d831ec7', [
+    // myEthers.listenContract('', [
     //         'event Transfer(address indexed from, address indexed to, uint value)',
     //         'function symbol() view returns (string)',
     //         'function balanceOf(address) public view returns(uint)',
     //       ]);
-    // myEthers.claim('0xe89259cd365c0264658547a8f6cc35e7139c2cab002e02fd1d721c66f0aaa524', 455210);
+    // myEthers.claim('', 455210);
 }

@@ -7,7 +7,7 @@ async function createWallet(num = 2, walletfile = 'wallets.csv') {
 	// 判断文件是否存在
 	if (!fs.existsSync(walletfile)) {
 	  // 文件不存在则创建文件并写入标题行
-	  const header = 'wallet_id,address,enPrivateKey,enMnemonic,enPassword\n';
+	  const header = 'wallet_id,address,enPrivateKey,enMnemonic\n';
 	  fs.writeFileSync(walletfile, header);
 	}
 	
@@ -17,9 +17,9 @@ async function createWallet(num = 2, walletfile = 'wallets.csv') {
 		const wallet = ethers.Wallet.createRandom();
         const enPrivateKey = await encryptText(wallet.privateKey)
         const enMnemonic = await encryptText(wallet.mnemonic.phrase)
-        const randomPassword = generateRandomString(18)
-        const enPassword = await encryptText(randomPassword)
-		const rowData = `${i},${wallet.address},${enPrivateKey},${enMnemonic},${enPassword}\n`
+        // const randomPassword = generateRandomString(18)
+        // const enPassword = await encryptText(randomPassword)
+		const rowData = `${i},${wallet.address},${enPrivateKey},${enMnemonic}\n`
 	
 		// 文件存在则追加,不存在则创建
 		fs.appendFileSync(file, rowData);  
@@ -89,6 +89,6 @@ async function addColumnAndPopulate(filePath, newColumnName) {
   }
 
 // 调用示例
-await createWallet(5, 'wallets.csv');
+await createWallet(1, 'wallets.csv');
 // await createPasswordWallet(100, 'wallet_password.csv')
 // await addColumnAndPopulate('../data/wallet_eth_tugou.csv', 'enPassword');

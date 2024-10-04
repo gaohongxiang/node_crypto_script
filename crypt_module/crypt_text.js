@@ -24,14 +24,6 @@ import { personal_token } from '../config.js';
 //     process.env.KEY = KEY
 // }
 
-
-function strToBytes(password) {
-    const hash = crypto.createHash('sha256');
-    hash.update(password);
-    const passwordBytes = hash.digest();
-    return passwordBytes;
-}
-
 /** 
  * 使用 AES-256-GCM 对字符串进行加密
  * @param {string} text  需要加密的文本
@@ -43,8 +35,8 @@ export async function encryptText(text) {
         if(!process.env.KEY) {                    
             process.env.KEY = await parseToken(personal_token);
         }
-        // 使用密钥字符串获取密钥字节数组                   
-        const passwordBytes = strToBytes(process.env.KEY);
+        // 使用密钥字符串获取密钥字节数组
+        const passwordBytes = crypto.createHash('sha256').update(process.env.KEY).digest();                
         // 生成随机的 12 字节 IV                  
         const iv = crypto.randomBytes(12);             
         // 使用密钥和 IV 创建加密器            
@@ -76,7 +68,8 @@ export async function decryptText(encryptedText) {
       if(!process.env.KEY) {
         process.env.KEY = await parseToken(personal_token);
       }
-      const passwordBytes = strToBytes(process.env.KEY);
+      // 使用密钥字符串获取密钥字节数组
+      const passwordBytes = crypto.createHash('sha256').update(process.env.KEY).digest();
       // 提取 IV
       const iv = Buffer.from(encryptedText.slice(0, 24), 'hex'); 
       // 提取密文
@@ -104,7 +97,7 @@ export async function decryptText(encryptedText) {
  * @param {string} filePath - CSV 文件的路径。
  * @param {string} columnName - 要加密的列名。
  */
-async function encryptColumn(filePath, columnName) {
+export async function encryptColumn(filePath, columnName) {
     // 读取文件并解析 CSV 数据
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const parsedData = Papa.parse(fileContent, { header: true, skipEmptyLines: true }); //skipEmptyLines跳过空行
@@ -123,7 +116,7 @@ async function encryptColumn(filePath, columnName) {
  * @param {string} filePath - CSV 文件的路径。
  * @param {string} columnName - 要解密的列名。
  */
-async function decryptColumn(filePath, columnName) {
+export async function decryptColumn(filePath, columnName) {
     // 读取文件并解析 CSV 数据
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const parsedData = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
@@ -135,34 +128,3 @@ async function decryptColumn(filePath, columnName) {
     const csvContent = Papa.unparse(parsedData.data);
     fs.writeFileSync(filePath, csvContent);
 }
-
-
-// const encryptedText = await encryptText('zjm@mtmddE*C35gLqG');
-// console.log(`Encrypted text: ${encryptedText}`);
-
-// const decryptedText = await decryptText('3c0acaf2842b620f810d6ee94bea95696c2c5493f5a3bb3b2eac0afa7f649be21b37c59eb9c0fea2b9f707f97636096743db8274f3b36eff2a407050b999be4be02fbdab8d3f795a8f4abaf81f74988d5d335a8878ea91bd0ba97487b4c1');
-// console.log(`Decrypted text: ${decryptedText}`);
-
-
-// await decryptColumn('./data/wallet_eth.csv', 'enPrivateKey')
-// await decryptColumn('./data/wallet_eth.csv', 'enMnemonic')
-// await encryptColumn('./data/wallet_eth.csv', 'enPrivateKey')
-// await encryptColumn('./data/wallet_eth.csv', 'enMnemonic')
-
-// await decryptColumn('./data/wallet_eth_fuzhu.csv', 'fuzhu_enPrivateKey')
-// await decryptColumn('./data/wallet_eth_fuzhu.csv', 'fuzhu_enMnemonic')
-// await encryptColumn('./data/wallet_eth_fuzhu.csv', 'fuzhu_enPrivateKey')
-// await encryptColumn('./data/wallet_eth_fuzhu.csv', 'fuzhu_enMnemonic')
-
-// await decryptColumn('./data/wallet_eth_tugou.csv', 'tugou_enPrivateKey')
-// await decryptColumn('./data/wallet_eth_tugou.csv', 'tugou_enMnemonic')
-// await encryptColumn('./data/wallet_eth_tugou.csv', 'tugou_enPrivateKey')
-// await encryptColumn('./data/wallet_eth_tugou.csv', 'tugou_enMnemonic')
-
-// await decryptColumn('./data/wallet_argent.csv', 'argent_enPrivateKey')
-// await decryptColumn('./data/wallet_argent.csv', 'argent_enMnemonic')
-// await encryptColumn('./data/wallet_argent.csv', 'argent_enPrivateKey')
-// await encryptColumn('./data/wallet_argent.csv', 'argent_enMnemonic')
-
-// await decryptColumn('./data/wallet_braavos.csv', 'braavos_enMnemonic')
-// await encryptColumn('./data/wallet_braavos.csv', 'braavos_enMnemonic')

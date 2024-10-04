@@ -1,1 +1,0 @@
-await rpaTrade.rpaJediSwapToken(randomProject)

@@ -8,10 +8,12 @@ export class ArgentXUtil extends BitBrowserUtil {
         super(browserId);
         this.enPassword = enPassword
         this.argentXPage = null
-        this.homeUrl = 'chrome-extension://dlcobpjiigpikoobohmabehhmhfoodbb/index.html'
-        this.unlockUrl = 'chrome-extension://dlcobpjiigpikoobohmabehhmhfoodbb/lock-screen'
+        // this.homeUrl = 'chrome-extension://dlcobpjiigpikoobohmabehhmhfoodbb/index.html'
+        this.homeUrl = 'chrome-extension://mgdkjlekophodpmmfgkadbdekaloeelg/index.html'
+        // this.unlockUrl = 'chrome-extension://dlcobpjiigpikoobohmabehhmhfoodbb/lock-screen'
+        this.unlockUrl = 'chrome-extension://mgdkjlekophodpmmfgkadbdekaloeelg/lock-screen'
     }
-
+    
 
     async importByMnemonic(enMnemonic) {
         const mnemonic = await decryptText(enMnemonic)

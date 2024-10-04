@@ -48,13 +48,17 @@ async function readCsvFileAsArray(filePath, sep=',') {
   const walletPasswordFile = './data/wallet_password.csv'
   const ethWalletTugouFile = './data/wallet_eth_tugou.csv'
   const ethWalletFuzhuFile = './data/wallet_eth_fuzhu.csv'
+  const btcWalletFile = './data/wallet_btc.csv'
   const okxAddressFile = './data/okx_address.csv'
   const argentWalletFile = './data/wallet_argent.csv'
   const braavosWalletFile = './data/wallet_braavos.csv'
-  const emailFile = './data/gmail.csv'
+  const cosmosWalletFile = './data/wallet_cosmos.csv'
+  const solWalletFile = './data/wallet_sol.csv'
+  const emailFile = './data/email.csv'
+  const twitterFile = './data/twitter.csv'
 
 // 处理数据
-async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
+export async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
     // 不传endNum即表示查询一个账户
     if (endNum === null) {
         endNum = startNum;
@@ -77,8 +81,12 @@ async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
     const allWalletFuzhu = await readCsvFileAsArray(ethWalletFuzhuFile);
     const allWalletArgent = await readCsvFileAsArray(argentWalletFile);
     const allWalletBraavos = await readCsvFileAsArray(braavosWalletFile);
+    const allBtcWallet = await readCsvFileAsArray(btcWalletFile);
+    const allCosmosWallet = await readCsvFileAsArray(cosmosWalletFile);
+    const allSolWallet = await readCsvFileAsArray(solWalletFile);
     const okxAddress = await readCsvFileAsArray(okxAddressFile);
     const email = await readCsvFileAsArray(emailFile, '|');
+    const twitter = await readCsvFileAsArray(twitterFile, '|');
     // 处理数据
     const data = allBrowser.map((browser, index) => {
         const proxy = `socks5://${allIp[index].proxy_username}:${allIp[index].proxy_password}@${allIp[index].proxy_ip}:${allIp[index].proxy_port}`;
@@ -92,16 +100,14 @@ async function myFormatData(startNum, endNum=null, isBitbrowser=true) {
         ...allWalletFuzhu[index],
         ...allWalletArgent[index],
         ...allWalletBraavos[index],
+        ...allBtcWallet[index],
+        ...allCosmosWallet[index],
+        ...allSolWallet[index],
         ...okxAddress[index],
         ...email[index],
+        ...twitter[index],
         };
     }).slice(startNum - 1, endNum);
 
     return data;
 }
-
-
-// const data = await myFormatData(1);
-// console.log(data);
-
-export { myFormatData };

@@ -1,5 +1,5 @@
-// zksync-web3继承了ethers。跟zksync交互只需要导入zksync-web3即可。如果需要跟以太坊主网交互还是需要ethers
-import * as zksync from "zksync-web3";
+// zksync-ethers继承了ethers。跟zksync交互只需要导入zksync-ethers即可。如果需要跟以太坊主网交互还是需要ethers
+import * as zksync from "zksync-ethers";
 import * as ethers from "ethers";
 import fs from 'fs';
 import { getInfo } from '../../../utils/utils.js';

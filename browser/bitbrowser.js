@@ -1,11 +1,12 @@
 /*
  * bitbrowser api : https://doc.bitbrowser.cn/api-jie-kou-wen-dang/liu-lan-qi-jie-kou
- * playwright文档: https://playwright.dev/python/docs/library
+ * playwright文档: https://playwright.dev/docs/library
 */
 import playwright from 'playwright';
 import webdriver from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
 import axios from 'axios';
+import { sleep } from '../utils/utils.js';
 import * as paths from '../paths.js';
 
 
@@ -13,8 +14,26 @@ async function createOrUpdateBrowser() {
   // ...   
 }
 
-async function updateProxy() {
-  // ...
+export async function updateBitbrowserProxy(id, host, post, username, password) {
+    try{
+        const response = await axios.post(`${paths.bitbrowserUrl}/browser/proxy/update`, {
+            ids: [id],
+            ipCheckService:'ip-api',
+            proxyMethod:2, //自定义代理
+            proxyType:'socks5',
+            host:host,
+            port:post,
+            proxyUserName:username,
+            proxyPassword:password
+        });
+
+        // console.log(response)
+        if(response.data.success){
+            console.log('修改代理成功')
+        }else{
+            console.log('修改代理失败')
+        }
+    }catch(error){console.log(error)}
 }
 
 export class BitBrowserUtil {
@@ -25,92 +44,85 @@ export class BitBrowserUtil {
         this.context = null;
         this.page = null; 
         this.driver = null;
+        this.isStarted = false; // 初始化后变为true，第二次就不会运行了
     }
 
     async open() { 
-        const response = await axios.post(`${paths.bitbrowserUrl}/browser/open`, {id: this.browserId});
-        if(response.data.success === true){
-            const ws = response.data.data.ws;
-            const chromeDriver = response.data.data.driver;
-            const http = response.data.data.http;
-            // console.log(response.data)
-            // console.log(chromeDriver)
-            return { ws, chromeDriver, http };  
-        } else {
-            throw new Error('ws请求失败,请重试');
+        try{
+            const response = await axios.post(`${paths.bitbrowserUrl}/browser/open`, {id: this.browserId});
+            if(response.data.success === true){
+                const ws = response.data.data.ws;
+                const chromeDriverPath = response.data.data.driver;
+                const http = response.data.data.http;
+                // console.log(response.data)
+                return { ws, chromeDriverPath, http };  
+            } else {
+                throw new Error('ws请求失败,请重试');
+            }
+        }catch(error){
+            console.error('打开浏览器失败:', error);
+            throw error;
         }
     }
   
-    async start(navigationWaitTime=30, allWaitTime=30) {
-        // if(!process.env.ws) {
-        //     process.env.ws = await this.open();
-        // }
-        const { ws, chromeDriver, http } = await this.open();
-        this.browser = await playwright.chromium.connectOverCDP(ws);
-
-        const allContexts = this.browser.contexts();
-        this.context = allContexts[0];
-            
-        const allPages = this.context.pages();
-        this.page = allPages[0];
-        
-        // /*--------由于playwright目前不支持操作浏览器插件，这里先用selenium来操作---------*/
-        
-        // const debugPort = http.split(':')[1];
-        // console.log(debugPort)
-
-        // // 创建 ChromeOptions 对象，设置启动 Chrome 的参数
-        // const chromeOptions = new chrome.Options()
-        // // .addArguments(`--remote-debugging-port=${debugPort}`)
-        // .addArguments(`--remote-debugging-port=55937`)
-        // // .addArguments(`--debuggerAddress=${http}`)
-
-        // // 创建 ServiceBuilder 实例，连接到指定的 ChromeDriver
-        // const service = new chrome.ServiceBuilder('/Users/gaohongxiang/Library/Application Support/BitBrowser/chromedriver/112/chromedriver');
-        // // 创建 WebDriver 实例，使用指定的 ServiceBuilder
-        // this.driver = await new webdriver.Builder()
-        // .forBrowser('chrome')
-        // .setChromeOptions(chromeOptions)
-        // .setChromeService(service)
-        // .build();
-        // /*--------由于playwright目前不支持操作浏览器插件，这里先用selenium来操作---------*/
-
-        // const chromeOptions = new chrome.Options()
-        // .addArguments(`--debuggerAddress=${http}`)
-        // // .addArguments(`--remote-debugging-port=61915`)
-        // // .addArguments(`--prefs={ 'profile.default_content_setting_values': { images: 2 }`)
-        // const service = new chrome.ServiceBuilder(chromeDriver).build();
-        // // 新建WebDriver实例
-        // this.driver = await new chrome.Driver(service, chromeOptions);        
-        // // console.log(this.driver)
-
-        // this.defaultWaitTime(this.context, navigationWaitTime, allWaitTime);
-
-        // // 设置全屏
-        // // this.browser.maximize();
-        
-        // 关闭其他页面
-        allPages.forEach(page => {
-            if (page != this.page) {
-                page.close();
-            } 
-        });
-      
-        return {
-            browser: this.browser,
-            context: this.context,
-            page: this.page,
-            // driver: this.driver 
+    async start(navigationWaitTime=30, allWaitTime=30, maxRetries = 3) {
+        let retries = 0;
+        while (retries < maxRetries) {
+            try {
+                if (this.isStarted) {
+                    // console.log('已经调用过start方法,不执行初始化操作');
+                    return;
+                }
+                const { ws, chromeDriverPath, http } = await this.open();
+                this.browser = await playwright.chromium.connectOverCDP(ws);
+    
+                const allContexts = this.browser.contexts();
+                this.context = allContexts[0];
+    
+                const allPages = this.context.pages();
+                this.page = allPages[0];
+    
+                // this.defaultWaitTime(this.context, navigationWaitTime, allWaitTime);
+    
+                // 设置全屏
+                // this.browser.maximize();
+    
+                // 关闭其他页面
+                allPages.forEach(page => {
+                    if (page != this.page) {
+                        page.close();
+                    }
+                });
+    
+                /*--------由于playwright目前不支持操作浏览器插件，这里先用selenium来操作---------*/
+                // 初始化Selenium WebDriver
+                // this.driver = await this.initSeleniumDriver(chromeDriverPath, http);
+                // 初始化完毕后设为true，下次调用不会再次初始化
+                this.isStarted = true;
+    
+                // 如果成功初始化，跳出循环
+                break;
+            } catch (error) {
+                console.error('初始化失败，重试中...', error);
+                retries++;
+                if (retries >= maxRetries) {
+                    console.error('达到最大重试次数，无法继续初始化。');
+                    break;
+                }
+                // 在重试之前等待一段时间
+                await sleep(5); // 5秒后重试
+            }
         }
     }
-      
-    defaultWaitTime = function(context, navigationWaitTime=30, allWaitTime=30) {
-        context.setTimeout({ 
-          navigationTimeout: navigationWaitTime * 1000, 
-          timeout: allWaitTime * 1000 
-        });
-      }
+    
 
+    async closeSeleniumDriver() {
+        if (this.driver) {
+            await this.driver.quit();  // 关闭 Selenium WebDriver
+            this.driver = null;
+        }
+    }
+    
     async newContext() {
         // Create new context 
         return await this.browser.newContext()
@@ -191,11 +203,72 @@ export class BitBrowserUtil {
         });
     }
 
+
+/*------------------------------------------------seleniumx相关操作操作-------------------------------------------------*/
+
+    // 初始化 Selenium WebDriver 的函数
+    async initSeleniumDriver(chromeDriverPath, debuggerAddress) {
+        try{
+            let options = new chrome.Options()
+            options.options_['debuggerAddress'] = debuggerAddress
+
+            let service = new chrome.ServiceBuilder(chromeDriverPath)
+            // chrome.setDefaultService(service)
+        
+            let driver = new webdriver.Builder()
+                .setChromeService(service)
+                .setChromeOptions(options)
+                // .withCapabilities(webdriver.Capabilities.chrome())
+                .forBrowser('chrome')
+                .build()
+
+            return driver;
+        } catch (error) {
+            console.error('初始化 Selenium WebDriver失败:', error);
+            throw error; 
+        }
+    }
+   
+    async changeHandle() {
+        await sleep(3)
+        // 查找新打开的窗口句柄
+        const allHandles = await this.driver.getAllWindowHandles();
+        if (allHandles.length > 1) {
+            const newHandle = allHandles[1]; // 直接取第二个新句柄。原来的句柄是数组的第一个元素
+            // 切换到新窗口
+            await this.driver.switchTo().window(newHandle);
+            return true; // 返回 true 表示成功切换到了新窗口
+        } else {
+            // console.log('No new window was opened.');
+            return false; // 返回 false 表示没有新窗口被打开
+        }
+    }
+    
+    // async changeHandle(currentAllHandles, allHandles) {
+    //     await sleep(2)
+    //     // 查找新打开的窗口句柄
+    //     const newHandles = currentAllHandles.filter(handle => !allHandles.includes(handle));
+    //     if (newHandles.length > 0) {
+    //         // 假设只有一个新句柄，获取该句柄
+    //         const newHandle = newHandles[0]; // 直接取第一个新句柄，假设一次只会打开一个新窗口
+    //         // 切换到新窗口
+    //         await this.driver.switchTo().window(newHandle);
+    //         return true; // 返回 true 表示成功切换到了新窗口
+    //     } else {
+    //         // console.log('No new window was opened.');
+    //         return false; // 返回 false 表示没有新窗口被打开
+    //     }
+    // }
+    /*------------------------------------------------seleniumx相关操作操作-------------------------------------------------*/
+
+
     async test() {
         await this.start();
         // await this.page.goto("https://syncswap.xyz");
-        console.log(this.driver)
-        await this.driver.get('https://10kswap.com/')
+        // await this.page.waitForTimeout(5000)
+        // console.log(this.driver)
+        // await this.driver.get('https://www.baidu.com')
+        // await this.driver.get('https://10kswap.com/')
         // const all_handles = await this.driver.getAllWindowHandles()
         // console.log(all_handles)
     }
@@ -205,9 +278,6 @@ export class BitBrowserUtil {
 async function main() {
     const bitbrowser = new BitBrowserUtil('c04784d64e1742cab2f1329c3a8ee898');
     bitbrowser.test()
-    // await bitbrowser.stop();
 }
 
 // main();
-
-

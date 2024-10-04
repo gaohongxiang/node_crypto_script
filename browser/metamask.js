@@ -94,22 +94,24 @@ export class MetaMaskUtil extends BitBrowserUtil {
 
 
     async unlock() {
-        const password = await decryptText(this.enPassword)
-        await this.page.goto(this.unlockUrl);
-        // await this.page.goto(this.unlockUrl, { waitUntil:'networkidle', timeout:10000 });
-        await this.page.waitForTimeout(3000)
-        // console.log(this.page.url())
-        if (this.page.url() === this.unlockUrl) {
-            const isExist = await this.isElementExist('#password', 7)
-            console.log(isExist)
-            if(isExist) {
-                await this.page.locator('#password').fill(password); 
-                await this.page.click('text="登录"');    
-                await this.page.waitForTimeout(500);  
-            } else {
-                await this.unlock();
+        try{
+            const password = await decryptText(this.enPassword)
+            await this.page.goto(this.unlockUrl);
+            // await this.page.goto(this.unlockUrl, { waitUntil:'networkidle', timeout:10000 });
+            await this.page.waitForTimeout(3000)
+            // console.log(this.page.url())
+            if (this.page.url() === this.unlockUrl) {
+                const isExist = await this.isElementExist('#password', 7)
+                console.log(isExist)
+                if(isExist) {
+                    await this.page.locator('#password').fill(password); 
+                    await this.page.click('text="登录"');    
+                    await this.page.waitForTimeout(5000);  
+                } else {
+                    await this.unlock();
+                }
             }
-        }
+        }catch(error){console.log(error)}
     }
 
     async changeChain(chain) {
@@ -208,7 +210,7 @@ export class MetaMaskUtil extends BitBrowserUtil {
         }catch(error){console.log(error)}
     }
 
-    async connectWallet(url, {chain='', accountName='1撸毛', hasAnime=false, hasNavigator=false, navigatorButton='text=/(close)/i', hasConnectButton=true, hasMetaMaskButton=true, connectButton='text=/(Connect Wallet?|连接钱包|Login)/i', checkButton='', metamaskButton='text=/(metamask|browser wallet|Ethereum Wallet)/i',signButton='', waitTime=5}) {
+    async connectWallet(url, {chain='', accountName='1撸毛', hasAnime=false, hasNavigator=false, navigatorButton='text=/(close)/i', hasConnectButton=true, hasMetaMaskButton=true, connectButton='text=/(Connect Wallet?|连接钱包|Login|Connect)/i', checkButton='', metamaskButton='text=/(metamask|browser wallet|Ethereum Wallet)/i',signButton='', waitTime=5}) {
        /* 连接钱包
         * text=/(connect wallet?|连接钱包|Login)/i 匹配解析: ?表示前面的字符可有可无 i表示对大小写不敏感 |表示或者
         */
@@ -233,6 +235,7 @@ export class MetaMaskUtil extends BitBrowserUtil {
                 }catch(error){console.log(error)}
             }
             if(hasConnectButton){
+                await this.page.waitForTimeout(2000)
                 // 登录按钮
                 await this.page.waitForSelector(connectButton, {timeout:10000}).then(element => { element.click() });
             }

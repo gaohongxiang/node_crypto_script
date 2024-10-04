@@ -6,9 +6,9 @@ import { read } from 'xlsx';
 const provider = new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${config.alchemyEthMainnetApi}`);
 // const provider = new ethers.JsonRpcProvider(`https://arb-mainnet.g.alchemy.com/v2/${config.alchemyArbitrumMainnetApi}`);
 // const provider = new ethers.JsonRpcProvider(`https://eth-goerli.g.alchemy.com/v2/${config.alchemyGoerliMainnetApi}`);
-const address = '0xC38794b0747D63f9eE8bebFF34cD272E706CD432';
-const privateKey = '0x00c1d4b5477fa618e8a479241236629f665c615e2aa34e7165e229a16509ec90';
-const toAddress = '0xB03BAad50797793Ce0628e1EC122d88caA97cDB6';
+const address = '';
+const privateKey = '';
+const toAddress = '';
 const wallet = new ethers.Wallet(privateKey, provider);
 // console.log(wallet.getAddress());
 

@@ -31,4 +31,4 @@ async function check(startNum, endNum=null) {
     }
 }
 
-await check(1,20)
+// await check(1,20)

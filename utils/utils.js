@@ -5,7 +5,44 @@ import fs from 'fs';
 import { ethers } from 'ethers';
 import * as paths from '../paths.js'
 
-function getInfo(file=paths.tokenFile, chain=null) {
+/**
+ * 从CSV文件中读取数据，支持读取指定列或全部数据
+ * @param {string} csvFile - CSV文件路径
+ * @param {string} [columnName] - 要提取的列名，未指定时读取全部数据
+ * @returns {Promise<Array>} - 包含读取的数据的Promise
+ */
+export async function readCsvData(csvFile, {sep=',', columnName = null} = {}) {
+    const results = [];
+    const fileStream = fs.createReadStream(csvFile);
+    const parser = fileStream.pipe(parse({
+        delimiter: sep, // 分隔符为sep，默认逗号
+        columns: true, // 第一行为列名
+        escape: false, // 用于转义的单个字符。它仅适用于与 匹配的字符
+        quote: false, // 用于包围字段的字符，该字段周围是否存在引号是可选的，并且会自动检测。false禁用引号检测（abi很多引号，不需要检测）
+        skip_empty_lines: true, // 跳过空行
+    }));
+
+    for await (const row of parser) {
+      if (columnName) {
+        let data = row[columnName];
+        // 去除引号和逗号
+        data = data.replace(/["',]/g, '').replace(/,$/, '').trim();
+        results.push(data);
+
+        // 逐个输出地址，方便复制
+        results.forEach(column => {
+            console.log(column); 
+        });
+
+      } else {
+        results.push(row);
+      }
+    }
+    // console.log(results)
+    return results;
+}
+
+export function getInfo(file=paths.tokenFile, chain=null) {
     let data = fs.readFileSync(file, 'utf-8');
     data = JSON.parse(data);
     if (chain != null) {
@@ -20,7 +57,7 @@ function getInfo(file=paths.tokenFile, chain=null) {
  * @param {Array} excludedKeys - 一个需要排除的属性名数组，可以为 null。
  * @returns {Object} 包含随机选择的属性名和属性值的对象。
  */
-function getRandomObject(obj, excludedKeys = null) {
+export function getRandomObject(obj, excludedKeys = null) {
     // 根据 excludedKeys 参数过滤属性名数组
     const keys = excludedKeys === null
         ? Object.keys(obj)
@@ -34,7 +71,7 @@ function getRandomObject(obj, excludedKeys = null) {
 }
 
 
-const getInfo1 = async (filterVal1, filterVal2, file = paths.tokenFile, sep = '|') => {  
+export const getInfo1 = async (filterVal1, filterVal2, file = paths.tokenFile, sep = '|') => {  
 	
 	if (!fs.existsSync(file)) {  
 		console.log(`${file} 文件不存在，请先创建`);  
@@ -184,7 +221,7 @@ const getInfo1 = async (filterVal1, filterVal2, file = paths.tokenFile, sep = '|
  * @param {Array<value>} [paramValues] 参数值数组（可选）
  * @returns {string} 交易数据 
  */
-function generateTransactionData(functionPrototype, paramValues = []) {
+export function generateTransactionData(functionPrototype, paramValues = []) {
     // 1.生成函数签名
     // 计算函数原型的 Keccak-256 哈希
     const functionKeccak256Hash = ethers.keccak256(ethers.toUtf8Bytes(functionPrototype));
@@ -250,7 +287,7 @@ function generateTransactionData(functionPrototype, paramValues = []) {
         transactionData = `${functionSignature}${encodedParams.slice(2)}`;
     }
     // console.log(encodedParams);
-    // console.log(transactionData);
+    console.log(transactionData);
     return {functionSignature, encodedParams, transactionData};
     
     /*
@@ -269,7 +306,7 @@ function generateTransactionData(functionPrototype, paramValues = []) {
     */
 };
 
-function parseTransactionData(params, TransactionData) {
+export function parseTransactionData(params, TransactionData) {
     const abiCoder = new ethers.AbiCoder();
     TransactionData = '0x' + TransactionData.slice(10)
     // console.log(TransactionData)
@@ -280,7 +317,7 @@ function parseTransactionData(params, TransactionData) {
 }
 
 /** 循环执行直到任务成功 */
-function loop(task) {
+export function loop(task) {
     return new Promise(async (resolve) => {
         while (true) {
             try {
@@ -294,17 +331,17 @@ function loop(task) {
     })
 }
 
-function sleep(seconds) {
+export function sleep(seconds) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
 /**
- * 等待随机时间的异步函数
+ * 生成一个随机等待时间的异步函数，用于模拟在指定范围内的随机等待。
  * @param {number} [minSeconds=0] - 最小等待时间（单位：秒）
  * @param {number} [maxSeconds=10] - 最大等待时间（单位：秒）
  * @returns {Promise<void>} - 表示等待完成的 Promise
  */
-function randomWait(minSeconds = 0, maxSeconds = 10) {
+export function randomWait(minSeconds = 0, maxSeconds = 10) {
     const randomSeconds = Math.random() * (maxSeconds - minSeconds) + minSeconds;
     console.log(`等待 ${randomSeconds} 秒`);
     return new Promise(resolve => {
@@ -330,7 +367,7 @@ function randomWait(minSeconds = 0, maxSeconds = 10) {
  * @param {number} length - 生成的字符串的长度。
  * @returns {string} - 生成的随机字符串。
  */
-function generateRandomString(length) {
+export function generateRandomString(length) {
     const uppercaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercaseLetters = 'abcdefghijklmnopqrstuvwxyz';
     const numbers = '0123456789';
@@ -374,10 +411,13 @@ function generateRandomString(length) {
     // console.log(result);
     return result;
   }
-  
+
+
+//   await readCsvData('./data/wallet_argent.csv', 'argent_address')
 // generateRandomString(18);
 // generateTransactionData("claim(address,uint256,uint256,address,uint256,(bytes32[],uint256,uint256,address),bytes)", ["0x558eD78A8Ca9b69d59f0b6193C1f78fB4A8f7b88", 0, 1, '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 0, [["0x0000000000000000000000000000000000000000000000000000000000000000"], 1, 0, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"], '0x']);
 // generateTransactionData("safeMint(address,uint256)", ["0x85Df5B43Ad158B1860834C0ffcb59bf70e191347",1]);
+// generateTransactionData("send_mail(string,string)", ["2ec9452c7ed3121f799f3b0e07fe2de1e7e0ada5bdcb244a4aae1b03e1d59852",'c7d038faea2d284df5fff41eb8e05a3108c5151ca9b3b9b4d8def19550178881']);
 // parseTransactionData(['((address,bytes,address,bytes)[],address,uint256)[]', 'uint256', 'uint256'],'0x2cc4081e0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000010fbbd0000000000000000000000000000000000000000000000000000000064abb09f0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000221b262dd80000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000080115c708e12edd42e504c1cd52aea96c547c05c00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000600000000000000000000000005aea5775959fbc2557cc8789bc1bf90a239d9a91000000000000000000000000c5aba5066dad7108c08646733235a498794a714000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000')
 // parseTransactionData(['address', 'address', 'uint256'],'0x2cc4081e0000000000000000000000005aea5775959fbc2557cc8789bc1bf90a239d9a9100000000000000000000000086330a40e3a92591e502fc57c9821566c97a04c80000000000000000000000000000000000000000000000000000000000000002')
 // generateTransactionData("swap(address,address,uint256)", ["0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91","0xd4a658A9ce170C0D713Bc513fe579a11D464A3A1",2]);
@@ -394,4 +434,3 @@ function generateRandomString(length) {
 // await tokenInfo('people', 'eth')
 // await getInfo('people', 'eth')
 // await getInfo('syncswap-swap', 'zksync', paths.projectFile)
-export { sleep, randomWait, getInfo, getRandomObject, generateTransactionData, parseTransactionData, loop, generateRandomString };

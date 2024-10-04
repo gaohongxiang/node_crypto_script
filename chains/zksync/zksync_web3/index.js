@@ -1,12 +1,13 @@
-import express from 'express'
-import * as zksync from "zksync-web3";
+import { SocksProxyAgent } from 'socks-proxy-agent';
 import * as ethers from "ethers";
+import * as zksync from "zksync-ethers";
 import { decryptText } from "../../../crypt_module/crypt_text.js";
 import * as paths from '../../../paths.js'
 import { getInfo } from '../../../utils/utils.js';
 import { myFormatData } from "../../../formatdata.js";
-import { TradeUtil } from "../trade.js";
+import { TradeUtil } from "./trade.js";
 import { NftUtil } from "./nft.js";
+import { alchemyEthMainnetApi, alchemyZksyncApi } from '../../../config.js'
 
 const ethereumGasPrice = 30
 
@@ -22,34 +23,66 @@ async function checkGasPrice(ethereumProvider) {
     }
 }
 
+// 创建全局代理提供者函数，所有通过这些提供者的请求都会通过代理
+async function createProxyProviders(hasProxy = false, proxy = null) {
+    try {
+        let zksyncProvider, ethereumProvider;
+
+        if (hasProxy && proxy) {
+            // 创建 SOCKS 代理
+            const agent = new SocksProxyAgent(proxy);
+
+            // 注册全局的 getUrl 函数，所有的 FetchRequest 实例都会使用这个函数来处理网络请求
+            ethers.FetchRequest.registerGetUrl(ethers.FetchRequest.createGetUrlFunc({ agent }));
+
+            // 创建 zkSync 提供者，使用 FetchRequest 以确保走代理
+            const zksyncFetchReq = new ethers.FetchRequest(alchemyZksyncApi);
+            // 此方法适用于特定实例。会覆盖全局getUrl函数
+            // zksyncFetchReq.getUrlFunc = ethers.FetchRequest.createGetUrlFunc({ agent });
+            zksyncProvider = new zksync.Provider(zksyncFetchReq);
+
+            // 创建以太坊提供者，使用 FetchRequest 以确保走代理
+            const ethFetchReq = new ethers.FetchRequest(alchemyEthMainnetApi);
+            ethereumProvider = new ethers.JsonRpcProvider(ethFetchReq);
+        } else {
+            // 不使用代理的情况
+            zksyncProvider = new zksync.Provider(alchemyZksyncApi);
+            ethereumProvider = new ethers.JsonRpcProvider(alchemyEthMainnetApi);
+        }
+        // console.log(zksyncProvider)
+        // console.log(ethereumProvider)
+        return { zksyncProvider, ethereumProvider };
+    } catch (error) {
+        console.error("provider设置失败:", error.message);
+        // 如果设置失败，返回空
+        return null;
+    }
+}
+
+
 const main = (async(startNum, endNum=null)=>{
     try {
-        const zksyncProvider = new zksync.Provider('https://mainnet.era.zksync.io'); // zksync era 节点
-        const ethereumProvider = new ethers.providers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/KsQRrJb04s-adwpiSUoSr73lgTiIVmHX'); // 以太坊主网节点
-        console.log('---------------0000000000------------------')
         const projectInfos = getInfo(paths.projectFile)
-        console.log('---------------0000000001------------------')
 
         const data = await myFormatData(startNum, endNum)
-        console.log(data)
-        console.log('---------------0000000002------------------')
+        // console.log(data)
 
         let startNonce;
         let endNonce;
         for (const d of data) {
-            console.log('---------------0000000003------------------')
-
-            const check = await checkGasPrice(ethereumProvider); if(!check) { return; };
-            console.log('---------------1111111111------------------')
+            // console.log(d)
+            const providers = await createProxyProviders(hasProxy = true, proxy = d['proxy']);
+            if (!providers) {console.error("创建代理提供程序失败。跳过本次迭代。");continue;}
+            const { zksyncProvider, ethereumProvider } = providers;
+            // const check = await checkGasPrice(ethereumProvider); if(!check) { return; };
 
             const privateKey = await decryptText(d['enPrivateKey']);
             if (privateKey === null) {break};
             const wallet = new zksync.Wallet(privateKey, zksyncProvider, ethereumProvider);
-            console.log('---------------22222222222------------------')
 
-            startNonce = await wallet.getTransactionCount()
-            console.log('---------------33333333333------------------')
-
+            startNonce = await zksyncProvider.getTransactionCount(wallet.address)
+            console.log("任务开始前nonce:",startNonce)
+            
             // 随机选一个动作。可能是兑换代币，可能是mint nft。。。
             const actions = projectInfos['actions']
             const randomAction = actions[Math.floor(Math.random() * actions.length)];
@@ -62,7 +95,6 @@ const main = (async(startNum, endNum=null)=>{
                 const tradeactions = ['approve', 'swap']
                 const randomTradeAction = tradeactions[Math.floor(Math.random() * tradeactions.length)];
                 const trade = new TradeUtil();
-                console.log('---------------44444444444------------------')
 
                 if(randomProject.name === 'mute') {
                     if(randomTradeAction === 'approve') {
@@ -73,7 +105,6 @@ const main = (async(startNum, endNum=null)=>{
                 }   
             }else if(randomAction.name === 'mintNft') {
                 const nft = new NftUtil();
-                console.log('---------------5555555555------------------')
 
                 if(randomProject.name === 'zksNetwork') {
                     await nft.mintZksDomain(wallet, randomProject)
@@ -81,9 +112,8 @@ const main = (async(startNum, endNum=null)=>{
                     await nft.mintRaceNft(wallet, randomProject)
                 }
             }
-            endNonce = await wallet.getTransactionCount();
-            console.log(startNonce)
-            console.log(endNonce)
+            endNonce = await zksyncProvider.getTransactionCount(wallet.address)
+            console.log("任务开始后nonce:",endNonce)
             // 如果nonce没变化，说明没有新的交易。重新运行
             if (endNonce === startNonce) {
                 await main(startNum, endNum)
@@ -93,58 +123,13 @@ const main = (async(startNum, endNum=null)=>{
 
     } catch(error){
         console.log(error.reason)
-        console.log('111111111111111111')
         // NETWORK_ERROR|SERVER_ERROR
         if(error.reason === 'could not detect network' || error.reason === 'missing response') {
 
             await main(startNum, endNum)
         }
-        console.log('222222222222222222')
         console.log(error)
     }
 })
 
-// await main(25);
-
-// Error: could not detect network (event="noNetwork", code=NETWORK_ERROR, version=providers/5.7.2)
-//     at Logger.makeError (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/logger/lib/index.js:238:21)
-//     at Logger.throwError (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/logger/lib/index.js:247:20)
-//     at Provider.<anonymous> (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:609:54)
-//     at step (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
-//     at Object.throw (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
-//     at rejected (/Users/gaohongxiang/project/my_script/nodejs/web3_script_node/chains/zksync/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
-//     at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
-//   reason: 'could not detect network',
-//   code: 'NETWORK_ERROR',
-//   event: 'noNetwork'
-// }
-
-const app = express()
-
-app.use(async(req,res)=>{
-    const targetUrl = 'https://mainnet.era.zksync.io'
-    req.headers.host = new URL(targetUrl).host
-    console.log(`Proxying to ${targetUrl}${req.url}`)
-    console.log(req.body)
-    try{
-        const response = await axios({
-            method:req.method,
-            proxy:'socks5://qoytdppy:ahwms9ynfn71@45.114.12.28:5096',
-            url:`${targetUrl}${req.url}`,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            data: Json.stringify(req.body),
-        })
-        console.log(response.headers)
-        console.log(response.data)
-        res.status(response.status).set(response.headers).send(response.data)
-    }catch(error){
-        console.log(error)
-        if(error.response){
-            res.status(error.response.status).set(error.response.headers).send(error.response.data)
-        }else{
-            res.status(500).send(`An error occurred while processing the request.`)
-        }
-    }
-})
+await main(25);

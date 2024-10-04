@@ -97,7 +97,7 @@ class starknetUtil {
     }
 }
 
-const starknet = new starknetUtil('socks5://qoytdppy:ahwms9ynfn71@161.123.208.53:6297')
+const starknet = new starknetUtil('')
 // await starknet.getAbi('0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8')
-// starknet.getNonce('0x03cCfbc703E4853cD9D55179a8B0E826385853747516739aa1b48ACD481f6797')
+// starknet.getNonce('')
 starknet.getBlockHashAndNumber()
